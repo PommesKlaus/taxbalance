@@ -41,7 +41,7 @@ INSTALLED_APPS = [
     'corsheaders',
     # 'django_filters',
     'graphene_django',
-    'debug_toolbar',
+    # 'debug_toolbar',
     'core.apps.CoreConfig',
     'localgaap.apps.LocalgaapConfig',
 ]
@@ -55,7 +55,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'debug_toolbar.middleware.DebugToolbarMiddleware',
+    #'debug_toolbar.middleware.DebugToolbarMiddleware',
 ]
 
 ROOT_URLCONF = 'taxbalance.urls'
@@ -84,8 +84,10 @@ WSGI_APPLICATION = 'taxbalance.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'taxbalance',
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': 'sqlite3.db',
+        # 'ENGINE': 'django.db.backends.postgresql',
+        # 'NAME': 'taxbalance',
         'USER': 'taxuser',
         'PASSWORD': 'taxuser',
         'HOST': '127.0.0.1',
