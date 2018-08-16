@@ -5,11 +5,14 @@ from django.forms.models import model_to_dict
 from django.shortcuts import get_object_or_404
 from core.models import Version
 from taxbalance.types import ErrorType
+from taxbalance.helper_functions import to_dict
 
 from localgaap.models import Transaction
 
 
 class VersionType(DjangoObjectType):
+    pk = graphene.Int()
+
     class Meta:
         model = Version
 
@@ -35,7 +38,7 @@ class CreateVersion(graphene.Mutation):
         created_at = graphene.DateTime()
         updated_at = graphene.DateTime()
 
-    version = graphene.Field(VersionType)
+    version = graphene.Field(lambda: VersionType)
     errors = graphene.List(ErrorType)
 
     def mutate(self, info, **kwargs):
@@ -55,17 +58,7 @@ class CreateVersion(graphene.Mutation):
 
         vers = version_form.save()
 
-        # Copy Transactions from "copy_version"
-        if vers.copy_version:
-            old_transactions = Transaction.objects.filter(version=vers.copy_version)
-            new_transactions = []
-            for t in old_transactions:
-                t.id = None
-                t.version = vers
-                new_transactions.append(t)
-            Transaction.objects.bulk_create(new_transactions)
-
-        version = VersionType(**model_to_dict(vers))
+        version = VersionType(**to_dict(vers))
         return CreateVersion(version=version)
 
 
