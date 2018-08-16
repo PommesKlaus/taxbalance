@@ -4,7 +4,7 @@ from django.db import models
 
 
 class Transaction(models.Model):
-    oar = models.CharField(max_length=32, verbose_name="Reference")
+    oar = models.CharField(max_length=32, verbose_name="Reference", blank=True)
     name = models.CharField(max_length=100)
     category = models.CharField(max_length=20, default="Other")
     version = models.ForeignKey("core.Version", related_name="transactions", on_delete=models.CASCADE)
@@ -12,11 +12,12 @@ class Transaction(models.Model):
         max_digits=16,
         decimal_places=2,
         default=0,
-        verbose_name="Local GAAP value"
+        verbose_name="Local GAAP value",
+        blank=True
         )
-    difference = models.DecimalField(max_digits=16, decimal_places=2, default=0)
-    permanent_quota = models.DecimalField(max_digits=7, decimal_places=4, default=0)
-    neutral_movement = models.DecimalField(max_digits=16, decimal_places=2, default=0)
+    difference = models.DecimalField(max_digits=16, decimal_places=2, default=0, blank=True)
+    permanent_quota = models.DecimalField(max_digits=7, decimal_places=4, default=0, blank=True)
+    neutral_movement = models.DecimalField(max_digits=16, decimal_places=2, default=0, blank=True)
 
     @property
     def tax(self):
@@ -30,6 +31,6 @@ class Transaction(models.Model):
 
     def save(self, *args, **kwargs):
         # If "oar" is not present: Add unique key for new transaction
-        if not self.oar:
+        if not self.oar or self.oar == "":
             self.oar = str(uuid4()).replace("-", "")
         super().save(*args, **kwargs)

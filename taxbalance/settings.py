@@ -84,10 +84,10 @@ WSGI_APPLICATION = 'taxbalance.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': 'sqlite3.db',
-        # 'ENGINE': 'django.db.backends.postgresql',
-        # 'NAME': 'taxbalance',
+        # 'ENGINE': 'django.db.backends.sqlite3',
+        # 'NAME': 'sqlite3.db',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'taxbalance',
         'USER': 'taxuser',
         'PASSWORD': 'taxuser',
         'HOST': '127.0.0.1',
