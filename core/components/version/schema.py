@@ -1,3 +1,4 @@
+from datetime import date
 import graphene
 from graphene_django.types import DjangoObjectType
 from django.forms import ModelForm
@@ -15,6 +16,7 @@ class VersionType(DjangoObjectType):
 
     class Meta:
         model = Version
+        filter_fields = ["company", "reporting_date", "shortname"]
 
 
 class VersionForm(ModelForm):
@@ -68,15 +70,21 @@ class Mutation(graphene.ObjectType):
 
 class Query(object):
     all_versions = graphene.List(VersionType)
+    all_versions_for_company_and_year_gt = graphene.List(VersionType, companyId=graphene.String(), year=graphene.Int())
     version = graphene.Field(VersionType, id=graphene.Int())
 
     def resolve_all_versions(self, info, **kwargs):
         return Version.objects.select_related('company').all()
 
+    def resolve_all_versions_for_company_and_year_gt(self, info, **kwargs):
+        company_id = kwargs.get('companyId')
+        year = kwargs.get('year') or 2000
+        if company_id is not None:
+            return Version.objects.filter(company_id=company_id, reporting_date__gte=date(year, 1, 1))
+        return None
+
     def resolve_version(self, info, **kwargs):
         id = kwargs.get('id')
-
         if id is not None:
             return Version.objects.get(pk=id)
-
         return None
