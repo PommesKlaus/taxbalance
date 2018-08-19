@@ -68,11 +68,13 @@ class CreateTransaction(graphene.Mutation):
         # Prior year transaction values
         py_version_id = version.compare_version_id
         py_transaction = Transaction.objects.filter(oar=cy_transaction.oar, version_id=py_version_id)
+        py_transaction = None if not py_transaction else py_transaction[0]
         py_taxrate = 0 if not py_version_id else version.compare_version.localgaap_settings.deferred_tax_rate
 
         # Matching year transaction values
         tu_version_id = version.compare_version_id
         tu_transaction = Transaction.objects.filter(oar=cy_transaction.oar, version_id=tu_version_id)
+        tu_transaction = None if not tu_transaction else tu_transaction[0]
         tu_taxrate = 0 if not tu_version_id else version.matching_version.localgaap_settings.deferred_tax_rate
 
         # Loop through current-, prior year- and matching transactions and update GenericCalculationModel
