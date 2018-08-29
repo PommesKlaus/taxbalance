@@ -1,19 +1,47 @@
 import graphene
 from graphene_django.types import DjangoObjectType
-from django.forms import ModelForm
-from django.forms.models import model_to_dict
 from django.shortcuts import get_object_or_404
-from localgaap.models import Transaction
-from localgaap.components.calculation.schema import CalculationType, GenericCalculationModel
-from core.models import Version
+from django.forms import ModelForm
+
 from taxbalance.types import ErrorType
+from core.models import Version
+from localgaap.models import Transaction
+from localgaap.components.transaction.calculation import GenericCalculationModel, calculate_version
 
 
-class TransactionType(DjangoObjectType):
-    tax = graphene.Float()
+class CalculationType(DjangoObjectType):
+    cy_tax = graphene.Float()
+    tu_tax = graphene.Float()
+    py_tax = graphene.Float()
+    cy_deferred_tax = graphene.Float()
+    py_deferred_tax = graphene.Float()
+    cy_movement = graphene.Float()
+    cy_movement_deferred_tax = graphene.Float()
+    tu_movement = graphene.Float()
+    tu_movement_deferred_tax = graphene.Float()
 
     class Meta:
-        model = Transaction
+        model = GenericCalculationModel
+
+
+class Query(object):
+    calculation = graphene.List(CalculationType, version_id=graphene.Int())
+
+    def resolve_calculation(self, info, **kwargs):
+        version_id = kwargs.get('version_id')
+
+        if version_id is not None:
+            cy_version = Version.objects.select_related(
+                "compare_version", "matching_version"
+                ).get(pk=version_id)
+            py_version, tu_version = cy_version.compare_version, cy_version.matching_version
+            return calculate_version(
+                cy_version=cy_version,
+                py_version=py_version,
+                tu_version=tu_version
+                )
+
+        return None
 
 
 class TransactionForm(ModelForm):
@@ -22,7 +50,7 @@ class TransactionForm(ModelForm):
         fields = ('id', 'oar', 'name', 'category', 'version', 'local', 'difference', 'permanent_quota', 'neutral_movement',)
 
 
-class CreateTransaction(graphene.Mutation):
+class MutateTransaction(graphene.Mutation):
     class Arguments:
         id = graphene.Int()
         oar = graphene.String()
@@ -39,7 +67,9 @@ class CreateTransaction(graphene.Mutation):
 
     def mutate(self, info, **kwargs):
         # Get version and raise error if locked
-        version = Version.objects.select_related("compare_version", "matching_version").get(pk=kwargs["version"])
+        version = Version.objects.select_related(
+            "compare_version", "matching_version", "localgaap_settings"
+            ).get(pk=kwargs["version"])
         if version.locked:
             raise Exception("Provided Version is locked.")
         cy_taxrate = version.localgaap_settings.deferred_tax_rate
@@ -47,6 +77,10 @@ class CreateTransaction(graphene.Mutation):
         if "id" in kwargs:
             # Try to retrieve an existing instance from the DB to update values
             existing_transaction = get_object_or_404(Transaction, pk=kwargs.pop("id"))
+            # Override/Add Transaction "Name" and "Category" in kwargs with values from existing transaction
+            kwargs["name"] = existing_transaction.name
+            kwargs["category"] = existing_transaction.category
+            kwargs["oar"] = existing_transaction.oar
             transaction_form = TransactionForm(kwargs, instance=existing_transaction)
         else:
             transaction_form = TransactionForm(kwargs)
@@ -56,7 +90,7 @@ class CreateTransaction(graphene.Mutation):
                 ErrorType(field=key, messages=value)
                 for key, value in transaction_form.errors.items()
             ]
-            return CreateTransaction(errors=errors)
+            return MutateTransaction(errors=errors)
 
         # Current year transaction values
         cy_transaction = transaction_form.save()
@@ -78,55 +112,19 @@ class CreateTransaction(graphene.Mutation):
         tu_taxrate = 0 if not tu_version_id else version.matching_version.localgaap_settings.deferred_tax_rate
 
         # Loop through current-, prior year- and matching transactions and update GenericCalculationModel
-        fields_to_update = ('id', 'local', 'difference', 'tax', 'permanent_quota', 'neutral_movement',)
+        fields_to_update = ('id', 'local', 'difference', 'permanent_quota', 'neutral_movement',)
         for field in fields_to_update:
             setattr(calc, "cy_"+field, getattr(cy_transaction, field))
+            setattr(calc, "cy_taxrate", cy_taxrate)
             if py_transaction:
                 setattr(calc, "py_"+field, getattr(py_transaction, field))
+                setattr(calc, "py_taxrate", py_taxrate)
             if tu_transaction:
                 setattr(calc, "tu_"+field, getattr(tu_transaction, field))
+                setattr(calc, "tu_taxrate", tu_taxrate)
 
-        calc.cy_deferred_tax = calc.cy_difference * (1 - calc.cy_permanent_quota) * cy_taxrate
-
-        calc.py_deferred_tax = calc.py_difference * (1 - calc.py_permanent_quota) * py_taxrate
-
-        calc.cy_movement = (calc.cy_difference - calc.cy_neutral_movement) - (calc.tu_difference - calc.tu_neutral_movement)
-
-        calc.cy_movement_deferred_tax = (
-            (calc.cy_difference - calc.cy_neutral_movement)
-            * (1 - calc.cy_permanent_quota) * cy_taxrate
-            - (calc.tu_difference - calc.tu_neutral_movement)
-            * (1 - calc.tu_permanent_quota) * tu_taxrate
-            )
-
-        calc.tu_movement = (calc.tu_difference - calc.tu_neutral_movement) - (calc.py_difference - calc.py_neutral_movement)
-
-        calc.tu_movement_deferred_tax = (
-            (calc.tu_difference - calc.tu_neutral_movement)
-            * (1 - calc.tu_permanent_quota) * tu_taxrate
-            - (calc.py_difference - calc.py_neutral_movement)
-            * (1 - calc.py_permanent_quota) * py_taxrate
-            )
-
-        calculation = CalculationType(**model_to_dict(calc))
-        return CreateTransaction(calculation=calculation)
+        return MutateTransaction(calculation=calc)
 
 
 class Mutation(graphene.ObjectType):
-    createTransaction = CreateTransaction.Field()
-
-
-class Query(object):
-    all_transactions = graphene.List(TransactionType)
-    transaction = graphene.Field(TransactionType, id=graphene.Int())
-
-    def resolve_version_transactions(self, info, **kwargs):
-        return Transaction.objects.select_related('version').all()
-
-    def resolve_transaction(self, info, **kwargs):
-        id = kwargs.get('id')
-
-        if id is not None:
-            return Transaction.objects.get(pk=id)
-
-        return None
+    mutateTransaction = MutateTransaction.Field()

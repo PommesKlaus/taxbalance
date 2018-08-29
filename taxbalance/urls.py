@@ -22,8 +22,4 @@ from graphene_django.views import GraphQLView
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('graphql', csrf_exempt(GraphQLView.as_view(graphiql=True))),
-    path('api/v1/core/', include("core.urls")),
 ]
-
-if "localgaap.apps.LocalgaapConfig" in settings.INSTALLED_APPS:
-    urlpatterns += [path('api/v1/localgaap/', include("localgaap.urls"))]

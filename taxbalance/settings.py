@@ -37,7 +37,6 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'rest_framework',
     'corsheaders',
     # 'django_filters',
     'graphene_django',
@@ -133,17 +132,6 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/2.0/howto/static-files/
 
 STATIC_URL = '/static/'
-
-
-# Settings for Django Rest Framework (DRF)
-# http://django-rest-framework.org/api-guide/settings/
-
-REST_FRAMEWORK = {
-    'COERCE_DECIMAL_TO_STRING': False,
-    'DEFAULT_FILTER_BACKENDS': (
-        # 'django_filters.rest_framework.DjangoFilterBackend',
-    ),
-}
 
 
 # Settings for Django-Graphene (GraphQL)
