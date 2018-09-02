@@ -34,3 +34,22 @@ class Version(models.Model):
 
     def __str__(self):
         return "{0} > {1}".format(self.reporting_date, self.shortname)
+
+    def partial_update(self, save_update=True, **kwargs):
+        """Updates the specified model instance using the keyword arguments as the model
+        property attributes and values.
+        """
+        cls = type(self)
+        for attr, val in kwargs.items():
+            # Check if attr in model
+            if hasattr(self, attr):
+                # If model-attr is a Foreign_Key field:
+                # Add "_id"-suffix to provided attr-name
+                if cls._meta.get_field(attr).is_relation:
+                    setattr(self, attr + "_id", val)
+                else:
+                    setattr(self, attr, val)
+            else:
+                raise KeyError("Failed to update non existing attribute {}.{}".format(str(cls), attr))
+        if save_update:
+            self.save()

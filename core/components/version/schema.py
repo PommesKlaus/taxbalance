@@ -6,28 +6,67 @@ from django.forms.models import model_to_dict
 from django.shortcuts import get_object_or_404
 from core.models import Version
 from taxbalance.types import ErrorType
-from taxbalance.helper_functions import to_dict
-
-from localgaap.models import Transaction
+from taxbalance.utils import to_dict
 
 
 class VersionType(DjangoObjectType):
     pk = graphene.Int()
+    company_id = graphene.String()
+    matching_version_id = graphene.Int()
+    compare_version_id = graphene.Int()
+    copy_version_id = graphene.Int()
 
     class Meta:
         model = Version
-        filter_fields = ["company", "reporting_date", "shortname"]
+        # filter_fields = ["company", "reporting_date", "shortname"]
 
 
-class VersionForm(ModelForm):
-    class Meta:
-        model = Version
-        exclude = ()
+class MutateVersion(graphene.Mutation):
+    version = graphene.Field(lambda: VersionType)
+    errors = graphene.List(ErrorType)
+
+    def mutate(self, info, **kwargs):
+        # Graphene expects for foreign key fields an int() value.
+        # However, Django model also allows None/null as value. These values
+        # are sent as "-1" by the frontend and have to be converted to "None"
+        for key in ('compare_version', 'matching_version', 'copy_version'):
+            if key in kwargs:
+                if kwargs[key] == -1:
+                    kwargs[key] = None
+
+        if "id" in kwargs:
+            # Version should already exist: UPDATE
+            version = get_object_or_404(
+                Version.objects.select_related('compare_version', 'matching_version'),
+                pk=kwargs["id"])
+
+            # Don't allow changes if version is locked
+            if version.locked:
+                raise Exception("Provided Version is locked.")
+
+            # Only allow a version to be set to locked if compare_version
+            # and matching_version are also locked
+            if (kwargs.get("locked", False)     # POST-request says: Lock version
+                and not version.locked # Up to now, version isn't locked
+                and (
+                    not getattr(version.compare_version, "locked", True)     # One of the prior year
+                    or not getattr(version.matching_version, "locked", True) # versions is not locked
+                )):
+                raise Exception("Cannot lock version if compare- or matching-version are unlocked.")
+        else:
+            # If new version is created: Make sure it is not locked
+            kwargs["locked"] = False
+            version = Version()
+
+        version.partial_update(**kwargs)
+
+        vers = VersionType(**to_dict(version))
+        # vers = VersionType(**model_to_dict(version))
+        return MutateVersion(version=vers)
 
 
-class CreateVersion(graphene.Mutation):
+class CreateVersion(MutateVersion):
     class Arguments:
-        id = graphene.Int()
         shortname = graphene.String(required=True)
         reporting_date = graphene.Date(required=True)
         company = graphene.String(required=True)
@@ -35,37 +74,21 @@ class CreateVersion(graphene.Mutation):
         matching_version = graphene.Int()
         copy_version = graphene.Int()
         description = graphene.String()
+
+
+class UpdateVersion(MutateVersion):
+    class Arguments:
+        id = graphene.Int()
+        compare_version = graphene.Int()
+        matching_version = graphene.Int()
+        description = graphene.String()
         archived = graphene.Boolean()
         locked = graphene.Boolean()
-        created_at = graphene.DateTime()
-        updated_at = graphene.DateTime()
-
-    version = graphene.Field(lambda: VersionType)
-    errors = graphene.List(ErrorType)
-
-    def mutate(self, info, **kwargs):
-        if "id" in kwargs:
-            # Version should already exist: UPDATE
-            existing_version = get_object_or_404(Version, pk=kwargs["id"])
-            version_form = VersionForm(kwargs, instance=existing_version)
-        else:
-            version_form = VersionForm(kwargs)
-
-        if not version_form.is_valid():
-            errors = [
-                ErrorType(field=key, messages=value)
-                for key, value in version_form.errors.items()
-            ]
-            return CreateVersion(errors=errors)
-
-        vers = version_form.save()
-
-        version = VersionType(**to_dict(vers))
-        return CreateVersion(version=version)
 
 
 class Mutation(graphene.ObjectType):
     createVersion = CreateVersion.Field()
+    updateVersion = UpdateVersion.Field()
 
 
 class Query(object):
