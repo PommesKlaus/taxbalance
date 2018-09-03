@@ -11,10 +11,6 @@ from taxbalance.utils import to_dict
 
 class VersionType(DjangoObjectType):
     pk = graphene.Int()
-    company_id = graphene.String()
-    matching_version_id = graphene.Int()
-    compare_version_id = graphene.Int()
-    copy_version_id = graphene.Int()
 
     class Meta:
         model = Version
@@ -22,8 +18,10 @@ class VersionType(DjangoObjectType):
 
 
 class MutateVersion(graphene.Mutation):
-    version = graphene.Field(lambda: VersionType)
-    errors = graphene.List(ErrorType)
+    # version = graphene.Field(lambda: VersionType)
+    # errors = graphene.List(ErrorType)
+
+    Output = VersionType
 
     def mutate(self, info, **kwargs):
         # Graphene expects for foreign key fields an int() value.
@@ -60,9 +58,7 @@ class MutateVersion(graphene.Mutation):
 
         version.partial_update(**kwargs)
 
-        vers = VersionType(**to_dict(version))
-        # vers = VersionType(**model_to_dict(version))
-        return MutateVersion(version=vers)
+        return VersionType(**to_dict(version))
 
 
 class CreateVersion(MutateVersion):

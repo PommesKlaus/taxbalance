@@ -8,11 +8,11 @@ def to_dict(instance):
             if instance.pk is None:
                 data[f.name] = []
             else:
-                data[f.name] = list(f.value_from_object(instance).values_list('pk', flat=True))
-        elif f.is_relation:
-            data[f.name + "_id"] = f.value_from_object(instance)
+                data[f.name] = []
+                # Following line eventually not working; To check if m2m-Relationship is required.
+                # data[f.name] = list(f.value_from_object(instance).values_list('pk', flat=True))
         else:
-            data[f.name] = f.value_from_object(instance)
+            data[f.name] = getattr(instance, f.name)
     if "id" in data:
         data["pk"] = data["id"]
     return data

@@ -40,6 +40,7 @@ class Version(models.Model):
         property attributes and values.
         """
         cls = type(self)
+        foreign_key_fields = []
         for attr, val in kwargs.items():
             # Check if attr in model
             if hasattr(self, attr):
@@ -47,9 +48,16 @@ class Version(models.Model):
                 # Add "_id"-suffix to provided attr-name
                 if cls._meta.get_field(attr).is_relation:
                     setattr(self, attr + "_id", val)
+                    foreign_key_fields.append(attr)
                 else:
                     setattr(self, attr, val)
             else:
                 raise KeyError("Failed to update non existing attribute {}.{}".format(str(cls), attr))
         if save_update:
             self.save()
+            # partial_update modifies Foreign-Key-Fields directly by their _id-Attribute
+            # Problem: The "real" related field doesn't get updated; therefore resulting
+            # in a difference between fk_field_id and fk_field.id
+            # Solution: Remember all Foreign-Key-Fields which are updated and perform
+            # a refresh from db for these fields.
+            self.refresh_from_db(fields=foreign_key_fields)
