@@ -54,7 +54,7 @@ class MutateVersion(graphene.Mutation):
         else:
             # If new version is created: Make sure it is not locked
             kwargs["locked"] = False
-            version = Version()
+            version = Version(company_id=kwargs.pop("company"))
 
         version.partial_update(**kwargs)
 

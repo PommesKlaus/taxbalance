@@ -4,7 +4,11 @@ from django.db import models
 class Version(models.Model):
     shortname = models.CharField(max_length=30)
     reporting_date = models.DateField()
-    company = models.ForeignKey('Company', related_name='versions', on_delete=models.CASCADE)
+    company = models.ForeignKey(
+        'Company',
+        related_name='versions',
+        on_delete=models.CASCADE
+        )
     compare_version = models.ForeignKey(
         'self',
         blank=True,
