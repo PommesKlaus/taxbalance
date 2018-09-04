@@ -3,7 +3,7 @@ from graphene_django.types import DjangoObjectType
 from django.shortcuts import get_object_or_404
 from django.forms import ModelForm
 
-from taxbalance.types import ErrorType
+from helpers.graphene_types import ErrorType
 from core.models import Version
 from localgaap.models import Transaction
 from localgaap.components.transaction.calculation import GenericCalculationModel, calculate_version

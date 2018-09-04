@@ -142,6 +142,8 @@ GRAPHENE = {
     'MIDDLEWARE': ['graphene_django.debug.DjangoDebugMiddleware']
 }
 
+TEST_RUNNER = 'snapshottest.django.TestRunner'
+
 # Settings for Django CORS Headers
 # https://github.com/ottoyiu/django-cors-headers
 

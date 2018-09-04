@@ -1,12 +1,9 @@
 from datetime import date
 import graphene
 from graphene_django.types import DjangoObjectType
-from django.forms import ModelForm
-from django.forms.models import model_to_dict
 from django.shortcuts import get_object_or_404
 from core.models import Version
-from taxbalance.types import ErrorType
-from taxbalance.utils import to_dict
+from helpers.functions import to_dict
 
 
 class VersionType(DjangoObjectType):
@@ -18,12 +15,10 @@ class VersionType(DjangoObjectType):
 
 
 class MutateVersion(graphene.Mutation):
-    # version = graphene.Field(lambda: VersionType)
-    # errors = graphene.List(ErrorType)
 
     Output = VersionType
 
-    def mutate(self, info, **kwargs):
+    def mutate(self, **kwargs):
         # Graphene expects for foreign key fields an int() value.
         # However, Django model also allows None/null as value. These values
         # are sent as "-1" by the frontend and have to be converted to "None"
@@ -92,17 +87,20 @@ class Query(object):
     all_versions_for_company_and_year_gt = graphene.List(VersionType, companyId=graphene.String(), year=graphene.Int())
     version = graphene.Field(VersionType, id=graphene.Int())
 
-    def resolve_all_versions(self, info, **kwargs):
+    def resolve_all_versions(self):
         return Version.objects.select_related('company').all()
 
-    def resolve_all_versions_for_company_and_year_gt(self, info, **kwargs):
+    def resolve_all_versions_for_company_and_year_gt(self, **kwargs):
         company_id = kwargs.get('companyId')
         year = kwargs.get('year') or 2000
         if company_id is not None:
-            return Version.objects.filter(company_id=company_id, reporting_date__gte=date(year, 1, 1))
+            return Version.objects.filter(
+                company_id=company_id,
+                reporting_date__gte=date(year, 1, 1)
+                )
         return None
 
-    def resolve_version(self, info, **kwargs):
+    def resolve_version(self, **kwargs):
         id = kwargs.get('id')
         if id is not None:
             return Version.objects.get(pk=id)

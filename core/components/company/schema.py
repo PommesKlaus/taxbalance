@@ -9,13 +9,13 @@ class CompanyType(DjangoObjectType):
         model = Company
 
 class Query(object):
-    all_companies = graphene.List(CompanyType)
+    companies = graphene.List(CompanyType)
     company = graphene.Field(CompanyType, id=graphene.String())
 
-    def resolve_all_companies(self, info, **kwargs):
+    def resolve_companies(self, **kwargs):
         return Company.objects.all()
 
-    def resolve_company(self, info, **kwargs):
+    def resolve_company(self, **kwargs):
         id = kwargs.get('id')
 
         if id is not None:
