@@ -38,7 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'corsheaders',
-    # 'django_filters',
+    'django_filters',
     'graphene_django',
     # 'debug_toolbar',
     'core.apps.CoreConfig',
@@ -142,7 +142,6 @@ GRAPHENE = {
     'MIDDLEWARE': ['graphene_django.debug.DjangoDebugMiddleware']
 }
 
-TEST_RUNNER = 'snapshottest.django.TestRunner'
 
 # Settings for Django CORS Headers
 # https://github.com/ottoyiu/django-cors-headers

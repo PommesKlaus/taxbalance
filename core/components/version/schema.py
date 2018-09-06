@@ -87,10 +87,10 @@ class Query(object):
     all_versions_for_company_and_year_gt = graphene.List(VersionType, companyId=graphene.String(), year=graphene.Int())
     version = graphene.Field(VersionType, id=graphene.Int())
 
-    def resolve_all_versions(self):
+    def resolve_all_versions(self, info, **kwargs):
         return Version.objects.select_related('company').all()
 
-    def resolve_all_versions_for_company_and_year_gt(self, **kwargs):
+    def resolve_all_versions_for_company_and_year_gt(self, info, **kwargs):
         company_id = kwargs.get('companyId')
         year = kwargs.get('year') or 2000
         if company_id is not None:
@@ -100,7 +100,7 @@ class Query(object):
                 )
         return None
 
-    def resolve_version(self, **kwargs):
+    def resolve_version(self, info, **kwargs):
         id = kwargs.get('id')
         if id is not None:
             return Version.objects.get(pk=id)
