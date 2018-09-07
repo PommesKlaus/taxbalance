@@ -24,15 +24,21 @@ class CompanyTest(GraphQLTestCase):
             }
         """)
         expected = {
-            "companies": [
-                {
-                    "shortname": "X",
-                    "name": "X-Company"
-                },
-                {
-                    "shortname": "Y",
-                    "name": "Y-Company"
-                }
-            ]
+            "companies": {
+                "edges" :[
+                    {
+                        "node": {
+                            "shortname": "X",
+                            "name": "X-Company"
+                        }
+                    },
+                    {
+                        "node": {
+                            "shortname": "Y",
+                            "name": "Y-Company"
+                        }
+                    }
+                ]
+            }
         }
         self.assertResponseNoErrors(self.query(qry), expected)
