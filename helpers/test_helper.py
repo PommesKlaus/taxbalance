@@ -5,13 +5,16 @@ from django.test import Client
 # Inherit from this in your test cases
 class GraphQLTestCase(TestCase):
 
-    def setUp(self):
-        self._client = Client()
+    @classmethod
+    def setUpTestData(cls):
         # Additional Text-Info for console output
-        display_text = "Performing {}s".format(self.__class__.__name__)
+        display_text = "Performing {}".format(cls)
         print("\n")
         print(display_text)
         print("-" * len(display_text))
+
+    def setUp(self):
+        self._client = Client()
 
     def query(self, query: str, op_name: str = None, input: dict = None):
         '''

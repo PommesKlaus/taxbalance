@@ -1,23 +1,32 @@
 import graphene
 
 from graphene_django.types import DjangoObjectType
-from graphene_django.filter import DjangoFilterConnectionField
 
 from core.models import Company
+from helpers.graphene import filter_fields_args
+
 
 class CompanyType(DjangoObjectType):
     class Meta:
         model = Company
-        filter_fields = ["shortname", "name"]
-        interfaces = (graphene.relay.Node,)
+        filter_fields = {
+            "shortname": {
+                "field_type": graphene.String(),
+                "filter": ["icontains", "istartswith", "iendswith"]
+            },
+            "name": {
+                "field_type": graphene.String(),
+                "filter": ["icontains", "istartswith", "iendswith"]
+            }
+        }
+
 
 class Query(object):
-    companies = DjangoFilterConnectionField(CompanyType)
-    # companies = graphene.List(CompanyType)
+    companies = graphene.List(CompanyType, **filter_fields_args(CompanyType._meta.filter_fields))
     company = graphene.Field(CompanyType, id=graphene.String())
 
     def resolve_companies(self, info, **kwargs):
-        return Company.objects.all()
+        return Company.objects.filter(**kwargs)
 
     def resolve_company(self, info, **kwargs):
         id = kwargs.get('id')
