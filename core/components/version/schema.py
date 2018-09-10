@@ -4,6 +4,7 @@ from graphene_django.types import DjangoObjectType
 from django.shortcuts import get_object_or_404
 from core.models import Version
 from helpers.functions import to_dict
+from helpers.graphene import filter_fields_args
 
 
 class VersionType(DjangoObjectType):
@@ -11,7 +12,20 @@ class VersionType(DjangoObjectType):
 
     class Meta:
         model = Version
-        # filter_fields = ["company", "reporting_date", "shortname"]
+        filter_fields = {
+            "company": {
+                "field_type": graphene.String(),
+                "filter": ["exact"]
+            },
+            "reporting_date__year": {
+                "field_type": graphene.Int(),
+                "filter": ["gt", "gte", "lt", "lte"]
+            },
+            "shortname": {
+                "field_type": graphene.String(),
+                "filter": ["icontains", "istartswith", "iendswith"]
+            }
+        }
 
 
 class MutateVersion(graphene.Mutation):
@@ -83,22 +97,11 @@ class Mutation(graphene.ObjectType):
 
 
 class Query(object):
-    all_versions = graphene.List(VersionType)
-    all_versions_for_company_and_year_gt = graphene.List(VersionType, companyId=graphene.String(), year=graphene.Int())
+    versions = graphene.List(VersionType, **filter_fields_args(VersionType._meta.filter_fields))
     version = graphene.Field(VersionType, id=graphene.Int())
 
-    def resolve_all_versions(self, info, **kwargs):
-        return Version.objects.select_related('company').all()
-
-    def resolve_all_versions_for_company_and_year_gt(self, info, **kwargs):
-        company_id = kwargs.get('companyId')
-        year = kwargs.get('year') or 2000
-        if company_id is not None:
-            return Version.objects.filter(
-                company_id=company_id,
-                reporting_date__gte=date(year, 1, 1)
-                )
-        return None
+    def resolve_versions(self, info, **kwargs):
+        return Version.objects.select_related('company').filter(**kwargs)
 
     def resolve_version(self, info, **kwargs):
         id = kwargs.get('id')

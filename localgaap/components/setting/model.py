@@ -12,3 +12,6 @@ class Setting(models.Model):
         decimal_places=6,
         default=0.32
         )
+
+    def __str__(self):
+        return "Vers.ID {0}, {1}%".format(self.version_id, self.deferred_tax_rate * 100)
