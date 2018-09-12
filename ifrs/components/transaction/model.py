@@ -7,21 +7,18 @@ class Transaction(models.Model):
     oar = models.CharField(max_length=32, verbose_name="Reference", blank=True)
     name = models.CharField(max_length=100)
     category = models.CharField(max_length=20, default="Other")
-    version = models.ForeignKey("core.Version", related_name="localgaap_transactions", on_delete=models.CASCADE)
-    local = models.DecimalField(
+    version = models.ForeignKey(
+        "core.Version",
+        related_name="ifrs_transactions",
+        on_delete=models.CASCADE)
+    difference = models.DecimalField(
         max_digits=16,
         decimal_places=2,
         default=0,
-        verbose_name="Local GAAP value",
-        blank=True
-        )
-    difference = models.DecimalField(max_digits=16, decimal_places=2, default=0, blank=True)
+        blank=True,
+        verbose_name="Local to IFRS difference")
     permanent_quota = models.DecimalField(max_digits=7, decimal_places=4, default=0, blank=True)
-    neutral_movement = models.DecimalField(max_digits=16, decimal_places=2, default=0, blank=True)
-
-    @property
-    def tax(self):
-        return self.local + self.difference
+    oci_difference = models.DecimalField(max_digits=16, decimal_places=2, default=0, blank=True)
 
     class Meta:
         unique_together = (("version", "oar"),)
