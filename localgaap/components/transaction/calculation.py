@@ -86,8 +86,8 @@ class GenericCalculationModel(models.Model):
         return "{0} ({1})".format(self.oar, self.name)
 
     def update(self, **kwargs):
-        for k, v in kwargs.items():
-            setattr(self, k, v)
+        for k, val in kwargs.items():
+            setattr(self, k, val)
 
 
 def calculate_version(cy_version, tu_version=None, py_version=None):

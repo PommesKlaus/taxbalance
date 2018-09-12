@@ -1,5 +1,5 @@
 from datetime import date
-from helpers.test_helper import GraphQLTestCase
+from helpers.tst_helper import GraphQLTestCase
 from core.models import Company, Version
 from localgaap.models import Transaction, Setting
 

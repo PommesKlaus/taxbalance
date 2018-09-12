@@ -1,5 +1,5 @@
 from datetime import date
-from helpers.test_helper import GraphQLTestCase
+from helpers.tst_helper import GraphQLTestCase
 from core.models import Company, Version
 from localgaap.models import Transaction
 
@@ -158,3 +158,12 @@ class VersionTest(GraphQLTestCase):
             ]
         }
         self.assertResponseNoErrors(self.query(qry), expected)
+
+    """ To-Do: Open Test-Cases """
+    # def test_get_all_companies (Existing is a dummy)
+    # def test_version_model_string_repr
+    # def test_get_filtered_versions
+    # def test_get_single_version
+    # def test_get_none_version
+    # Create Version (incl. signal)
+    # Mutate Version

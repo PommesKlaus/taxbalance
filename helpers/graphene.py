@@ -6,11 +6,6 @@ class ErrorType(graphene.ObjectType):
     messages = graphene.List(graphene.String)
 
 
-def graphene_django_filter(model_fields, filter_types=None):
-    if filter_types is None:
-        filter_types = ("exact", "icontains", "gt", "gte", "lt", "lte", "istartswith", "iendswith",)
-    return { f.name: list(filter_types) for f in model_fields }
-
 def filter_fields_args(filters):
     """
     Returns a dict with Django filter descriptions as keys and graphene_types as values,
